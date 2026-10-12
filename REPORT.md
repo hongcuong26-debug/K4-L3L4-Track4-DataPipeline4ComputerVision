@@ -51,18 +51,25 @@ Vì sao test `max_gap_ms` là `warn` còn `in_range` là `error`? Kết quả th
 ### Câu 4
 Dựa vào `idempotency.json`: số dòng trước và sau hai lần chạy lại, và khi ghi kiểu `append`. Vì sao Delta `overwrite` theo partition (một trip) an toàn hơn xoá rồi ghi lại, nhất là khi giữa chừng có lỗi?
 
-(trả lời ở đây)
+- Với `trip-00003`, bảng frames có 1.246 dòng trước và vẫn 1.246 dòng sau hai lần chạy lại; fingerprint giữ nguyên `6c7480dfde7e`, nên `unchanged=true`.
+- Trip đó có 60 frame; biến thể ghi `append` hai lượt tạo 120 dòng, minh họa nhân đôi đúng 2× chứ không phải so với tổng 1.246 dòng toàn bảng.
+- Delta `overwrite` có predicate `trip_id` thay đúng một partition trong một transaction: dữ liệu cũ còn nguyên cho tới commit mới thành công và retry cho cùng kết quả.
+- Cách “xóa rồi ghi” tách hai thao tác có cửa sổ lỗi để partition bị trống/dở dang. Fingerprint chỉ băm trường nghiệp vụ (`frame_id`, trip, brightness, blur, dHash), không gồm `_processed_at`, nên chứng minh nội dung ổn định chứ không khẳng định metadata thời gian không đổi.
 
 ### Câu 5
 Khung hình **đen** và khung hình **tối** khác nhau thế nào, pipeline xử lý khác nhau ra sao, bạn có đồng ý không? Dựa vào `threshold.json`: nếu chọn ngưỡng 0, 2, 6 thì bao nhiêu khung bị coi là trùng ở mỗi drive? Bạn chọn ngưỡng nào, vì sao, và ngưỡng đó phụ thuộc vào tốc độ xe thế nào?
 
 | dHash khác tối đa | số khung trùng, drive A | số khung trùng, drive B |
 |---|---|---|
-| 0 | | |
-| 2 | | |
-| 6 | | |
+| 0 | 61 | 8 |
+| 2 | 149 | 53 |
+| 6 | 363 | 244 |
 
-(trả lời ở đây)
+- Ngưỡng brightness <12 là đen và bị loại; từ 12 đến <40 là tối nhưng vẫn giữ vì cảnh đêm/hầm là dữ liệu thật. Quan sát: A có 6 đen/4 tối, B có 4 đen/61 tối.
+- Blur dùng variance <40 (nhưng không gắn blur cho frame đã đen); near-duplicate dùng khoảng cách dHash với frame trước trong cùng trip; sync hợp lệ khi gap ≤150 ms.
+- `threshold.json` cho thấy tăng ngưỡng 0→2→6 làm số frame bị coi trùng tăng A: 61→149→363, B: 8→53→244.
+- Tôi giữ ngưỡng mặc định 2: nó bắt chuỗi đứng hình/gần giống nhưng ít có nguy cơ bỏ chuyển động thật hơn ngưỡng 6. Xe chạy chậm tạo nhiều frame gần nhau nên cùng ngưỡng sẽ loại tỷ lệ cao hơn; camera đứng hình làm dHash giống hệt.
+- Các cờ có thể chồng lấp nên không cộng 6+9+149+7 để suy ra số frame bị loại; `dark_kept` chỉ là số frame mang cờ tối, không bảo đảm mọi frame đó qua Gold nếu đồng thời có cờ khác.
 
 ## Bước 4 · Gold
 

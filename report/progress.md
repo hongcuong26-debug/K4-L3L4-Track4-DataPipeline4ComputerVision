@@ -47,3 +47,13 @@
 - `break_gate.json` thuộc MSSV `2A202602415`, `gate_failed=true`; test in_range bắt 6 dòng ở pha nới. Pha phục hồi `PASS=6 WARN=1 ERROR=0`.
 - Câu 2–3 đã điền từ `step2.txt`, `rejects.txt`, `telemetry_clock.txt`, `break_gate.txt` và JSON thí nghiệm.
 - Bước tiếp theo: CP4 chạy frames, 9 unit tests, idempotency và threshold.
+
+## CP4 — Bước 3: Frames, unit test, idempotency và threshold
+
+- Xử lý 26 trip thành 1.246 frame; dbt run PASS=4, dbt test PASS=8; module 3 đạt 6/6. Unit suite: 9 tests, OK.
+- Funnel: A 602 frame (đen 6, mờ 9, tối 4, gần trùng 149, mất đồng bộ 7); B 644 (4, 0, 61, 53, 7). Gap sync trung bình/tối đa: A 66/2.884 ms, B 73/3.112 ms.
+- Ngưỡng mặc định: dark 12/40, blur 40, dHash 2 bit, sync 150 ms. Cờ chồng lấp nên không cộng trực tiếp để suy ra số bị loại.
+- Idempotency trip-00003: 1.246→1.246, fingerprint `6c7480dfde7e` không đổi; append sai tạo 120 dòng cho partition 60 frame.
+- Threshold A/B ở 0 bit = 61/8; 2 bit = 149/53; 6 bit = 363/244. Giữ cấu hình mặc định 2.
+- Câu 4–5 và bảng đã điền từ `step3.txt`, `unit_tests.txt`, `idempotency.json`, `threshold.json` và code fingerprint/SQL flag.
+- Bước tiếp theo: CP5 chạy Gold, export lặp, manifest và leakage.
