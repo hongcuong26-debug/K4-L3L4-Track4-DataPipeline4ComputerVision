@@ -7,7 +7,7 @@
 | Họ và tên | Nguyễn Hồng Cường |
 | MSSV (đúng bằng `LAB_STUDENT_ID` trong `.env`) | `2A202602415` |
 | GitHub | `hongcuong26-debug` |
-| Trip dùng cho bài tập sập và chạy lại (xem GUIDE, bước 5) | `<điền: trip-xxxxx>` |
+| Trip dùng cho bài tập sập và chạy lại (xem GUIDE, bước 5) | `trip-05297` |
 
 ## Kết quả cuối
 
@@ -99,7 +99,11 @@ Vì sao `dataset_version` là **băm nội dung** chứ không phải ngày gi�
 ### Câu 9
 Mô tả chính xác điều xảy ra khi trip của bạn sập rồi chạy lại: bao nhiêu task chuyển đỏ, bao nhiêu task `upstream_failed`, bạn clear gì, dữ liệu có nhân đôi không, `dataset_version` có đổi không? Bằng chứng (ảnh, số) là gì?
 
-(trả lời ở đây)
+- Do MSSV có tiền tố chữ, tôi giữ nguyên `2A202602415` cho toàn bộ pipeline nhưng dùng phần số `202602415 % 26 = 15` để chọn `trip-05297`; run lỗi là `cp7_crash_trip05297_20261013T001900`.
+- Đúng một mapped task `silver_frames[15]` chuyển đỏ; 7 task downstream thành `upstream_failed`. Log thật ghi `simulated crash while extracting trip-05297` và ảnh `fail_task_log.png` cho thấy đúng task/trip này.
+- Tôi clear riêng mapped instance lỗi trước. Instance chạy lại xanh, nhưng Airflow 2.10.5 không tự mở lại 7 task đã ở trạng thái `upstream_failed`, nên tôi clear chính xác 7 task downstream đó trong cùng logical date; không reset lake và không `mark success`.
+- Run sau đó thành `success`; ảnh `airflow_retry_graph.png` cho thấy `silver_frames [26]` và toàn bộ downstream xanh. Hook được gọi trước vòng decode/upload, nên đây chỉ là mô phỏng lỗi lúc bắt đầu extraction, không chứng minh atomicity nếu sập giữa commit.
+- Trước và sau retry đều có 1.019 frame, `dataset_version=b2fb840da0d5`; truy vấn Gold cho 0 `frame_id` trùng và verify đạt `27/27` (`report/logs/cp7_verify.txt`). Cuối cùng `LAB_FAIL_ONCE` đã được xóa và container báo `HOOK_EMPTY`.
 
 ### Câu 10
 Nâng từ 2 drive lên **500 xe mỗi ngày**: ba thành phần nào của pipeline này sẽ vỡ đầu tiên, và bạn thay bằng gì (nối với slide 12, 22, 23)?
