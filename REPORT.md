@@ -21,7 +21,11 @@
 ### Câu 1
 Liệt kê **ít nhất 4 khác biệt** giữa telemetry nguồn A và nguồn B mà bạn thấy ở bronze. Vì sao pipeline giữ **mỗi nguồn một bảng bronze** và để mọi cột ở dạng chữ, thay vì gộp và ép kiểu ngay?
 
-(trả lời ở đây)
+- Lần reset này Bronze nhận 3.021 dòng A và 3.234 dòng B (`report/logs/step1.txt`, bảng “Số dòng”).
+- A dùng `ts_utc`, `speed_mps`, `heading_deg`, `lat/lon`, `alt_m`, `acc_x/acc_y`, `gas/brake/steer`; B lần lượt dùng `timestamp_ms`, `spd_kmh`, `hdg`, `latitude/longitude`, `altitude`, `ax/ay`, `throttle_pct/brake_pct/steering`.
+- Timestamp A là chuỗi ISO UTC, còn B là epoch millisecond; tốc độ A là m/s, B là km/h; bàn đạp A là tỷ lệ 0–1, B là phần trăm. `bronze_video_files` còn ghi offset đồng hồ B = 1.500 ms, A = 0 (`report/logs/bronze_video_files.txt`).
+- Giữ hai bảng và mọi trường raw dạng chữ giúp bảo toàn đúng dữ liệu nguồn, không mất dòng vì ép kiểu/schema drift; việc chuẩn hóa có kiểm soát được thực hiện ở Silver.
+- Lượt nạp lại drive A báo `already present`; history `bronze.raw_telemetry_a` chỉ có version 0, một WRITE thêm 3.021 dòng (`report/logs/bronze_history.txt`), nên lần lặp không tạo commit hay dòng mới.
 
 ## Bước 2 · Silver telemetry
 

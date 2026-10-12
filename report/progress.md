@@ -27,3 +27,13 @@
 - Kết quả smoke tạm: version `b2fb840da0d5`, 1.019 Gold frame; train/val/test = 693/164/162; 26 trip = 18/4/4.
 - Bằng chứng: `report/logs/cp1_data_preflight.txt`, `cp1_compose_up.txt`, `cp1_health.txt`, `smoke_all.txt`, `report/evidence/run_summary.json`.
 - Bước tiếp theo: CP2 chạy lại riêng Bronze, đọc history/video_files và điền Câu 1 bằng quan sát thật.
+
+## CP2 — Bước 1: Bronze và schema drift
+
+- `scripts/lab.sh step 1 --reset` xóa 2.343 object cũ, nạp 3.021 dòng telemetry A, 3.234 dòng B, 26 trip và 2 video; module 1 đạt 5/5.
+- Lượt ingest lặp trong lệnh chỉ chạy lại drive A và báo video/telemetry `already present`; không diễn giải thành cả hai drive được ingest hai lần.
+- Delta history của `bronze.raw_telemetry_a`: đúng một WRITE ở version 0, `rows_added=3021`.
+- `bronze.video_files`: drive A offset 0 và SHA256 `636ba1a98dfc...`; drive B offset 1.500 ms và SHA256 `bfa62703f645...`.
+- MinIO read-only listing xác nhận `bronze/video/drive_a/raw.mp4`, `bronze/video/drive_b/raw.mp4` và bốn prefix Delta dưới `bronze/delta/`.
+- Câu 1 đã điền bằng số liệu từ `report/logs/step1.txt`, `bronze_history.txt`, `bronze_video_files.txt`, `bronze_objects.txt`.
+- Bước tiếp theo: CP3 chạy Silver telemetry, rejects và thí nghiệm break-gate.
