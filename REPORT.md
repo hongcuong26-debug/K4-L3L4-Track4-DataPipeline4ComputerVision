@@ -32,12 +32,19 @@ Liệt kê **ít nhất 4 khác biệt** giữa telemetry nguồn A và nguồn 
 ### Câu 2
 Pipeline đưa hai nguồn về một schema như thế nào (đơn vị, kiểu thời gian, **độ lệch đồng hồ**)? Bằng chứng nào trong kết quả bước 2 cho thấy đã đúng? Dán bảng quarantine của bạn (số dòng theo từng lý do, từng drive) và giải thích vì sao dòng lỗi vào `rejects` thay vì bị xoá.
 
-(trả lời ở đây)
+- Model A cast ISO UTC và giữ tốc độ m/s; model B đổi epoch ms sang `timestamptz`, chia `spd_kmh/3.6`, chia throttle/brake phần trăm cho 100 và đổi tên các cột về schema chung.
+- B còn trừ `telemetry_clock_offset_ms=1500`: telemetry sạch bắt đầu `2025-10-08 14:30:00.009+00`, chỉ sau video start `14:30:00.000` 9 ms (`report/logs/telemetry_clock.txt`).
+- Quarantine quan sát được: drive A = duplicate 20, speed_missing 30, speed_out_of_range 3; drive B cũng lần lượt 20, 30, 3 (`report/logs/step2.txt`).
+- Vì vậy A có 2.968 sạch + 53 reject = 3.021 raw; B có 3.181 + 53 = 3.234. Module 2 kiểm lại các đẳng thức này và đạt 7/7.
+- Giữ rejects cùng `drive_id`, timestamp, `_batch_id`, `_row_no` và lý do giúp audit/sửa nguồn hoặc đổi quy tắc; xóa im lặng sẽ mất lineage và che tỷ lệ lỗi.
 
 ### Câu 3
 Vì sao test `max_gap_ms` là `warn` còn `in_range` là `error`? Kết quả thí nghiệm `break-gate` của bạn (`break_gate.json`): test nào bắt được, bao nhiêu dòng, và điều đó cho biết gì về vai trò của "cổng chất lượng"?
 
-(trả lời ở đây)
+- `max_gap_ms` là `warn` vì khoảng mất tín hiệu đã biết cần được báo để theo dõi nhưng chưa nhất thiết làm vô hiệu toàn dataset; `in_range` là `error` vì tốc độ ngoài 0–70 m/s làm sai dữ liệu nghiệp vụ và phải chặn downstream.
+- Khi nới bước làm sạch lên 1.000 m/s, `break_gate.json` ghi `gate_failed=true`; test `in_range_silver_telemetry_speed_mps__70__0` bắt đúng 6 dòng.
+- Pha nới có `PASS=5 WARN=1 ERROR=1`; sau trả ngưỡng gốc có `PASS=6 WARN=1 ERROR=0`, nên lỗi cố ý không còn trong trạng thái nộp.
+- Thí nghiệm cho thấy cổng quality độc lập với logic làm sạch: nếu phép biến đổi vô tình cho dữ liệu vô lý đi qua, test mức `error` vẫn dừng pipeline trước Gold.
 
 ## Bước 3 · Silver frames
 

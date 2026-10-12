@@ -37,3 +37,13 @@
 - MinIO read-only listing xác nhận `bronze/video/drive_a/raw.mp4`, `bronze/video/drive_b/raw.mp4` và bốn prefix Delta dưới `bronze/delta/`.
 - Câu 1 đã điền bằng số liệu từ `report/logs/step1.txt`, `bronze_history.txt`, `bronze_video_files.txt`, `bronze_objects.txt`.
 - Bước tiếp theo: CP3 chạy Silver telemetry, rejects và thí nghiệm break-gate.
+
+## CP3 — Bước 2: Silver telemetry, quarantine và break-gate
+
+- `scripts/lab.sh step 2`: dbt run PASS=6; dbt test PASS=6/WARN=1/ERROR=0; module 2 đạt 7/7.
+- Silver có 6.149 dòng sạch và 106 rejects. Mỗi drive: duplicate 20, speed_missing 30, speed_out_of_range 3; clean + rejects khớp raw.
+- B được đổi km/h÷3,6, epoch ms→UTC và trừ offset 1.500 ms; telemetry start `14:30:00.009` so với video `14:30:00.000`.
+- `max_gap_ms` severity warn; `in_range` mặc định error theo `dbt/models/schema.yml`.
+- `break_gate.json` thuộc MSSV `2A202602415`, `gate_failed=true`; test in_range bắt 6 dòng ở pha nới. Pha phục hồi `PASS=6 WARN=1 ERROR=0`.
+- Câu 2–3 đã điền từ `step2.txt`, `rejects.txt`, `telemetry_clock.txt`, `break_gate.txt` và JSON thí nghiệm.
+- Bước tiếp theo: CP4 chạy frames, 9 unit tests, idempotency và threshold.
