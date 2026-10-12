@@ -68,3 +68,15 @@
 - Hai lần thử interpreter sai (`python`, `/opt/venv/bin/python`) thất bại trước khi dùng đúng `/home/airflow/lab-venv/bin/python`; không thay đổi dữ liệu hay mã nguồn.
 - Bằng chứng: `step4.txt`, `gold_no_straddle.txt`, `export_second.txt`, `leakage.txt`, `manifest_cp5.txt`, `report/evidence/leakage.json`.
 - Bước tiếp theo: chạy gate module 4, commit CP5 rồi sang CP6 warehouse/Airflow baseline; quy tắc chọn fail trip vẫn cần xử lý vì MSSV có chữ.
+
+## CP6 — Bước 5: Warehouse và Airflow baseline (phần độc lập đã xong)
+
+- `scripts/lab.sh step 5` publish đủ 6 mart: trip summary 26, telemetry quality 2, split balance 3, speed coverage 7, gallery 1.019, funnel 2; module 5 đạt 2/2.
+- `LAB_FAIL_ONCE` trống. Hai DAG đã được unpause; Airflow UI xác nhận `day09_video_pipeline` active và `Is paused=false`.
+- Reset run `cp6_reset_2A202602415_20261012T235100` success từ 16:51:31 đến 16:52:42 UTC; task `reset_lake` success.
+- Baseline run `cp6_baseline_2A202602415_20261012T235300` success từ 16:53:13 đến 17:01:09 UTC (7 phút 55 giây). Tất cả task success; `silver_frames` có đúng 26 mapped instance, chạy tuần tự do `max_active_tis_per_dagrun=1`.
+- Sau DAG: `dataset_version=b2fb840da0d5`, 1.019 Gold frame, verify trực tiếp đạt 27/27. Ảnh graph xanh thật `airflow_graph.png` có kích thước 1.300×815, SHA256 `c49f1806d1305d27b0c3ac7141ea4f9505fd720deb1e9d1b40a253afb1dc67d2`.
+- Airflow UI có lỗi JavaScript `Cannot set properties of undefined (setting 'autocomplete')`, làm toggle/link click không gửi thao tác. Đã dùng Airflow CLI chính thức để unpause/trigger, sau đó dùng UI đọc đúng run và chụp graph; không chạy pipeline CLI đồng thời với DAG.
+- Lần polling đầu dùng `airflow dags state` với run ID không đúng cú pháp nên trả help text; đã dừng và dùng truy vấn read-only metadata Postgres. Log giữ cả lần thất bại và metadata đúng để audit.
+- Bằng chứng: `step5.txt`, `airflow_baseline.txt`, `cp6_verify.txt`, `list_trips.txt`, `report/screenshots/airflow_graph.png`.
+- Blocker còn lại của CP6: MSSV `2A202602415` có chữ nên `int(MSSV) % 26` không hợp lệ. Theo plan, không bỏ tiền tố, đổi MSSV hay tự thay bằng hash; cần quy tắc chính thức để chọn trip trước CP7.
