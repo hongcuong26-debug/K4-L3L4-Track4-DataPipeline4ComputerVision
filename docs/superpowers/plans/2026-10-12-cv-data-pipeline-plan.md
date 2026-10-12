@@ -411,4 +411,3 @@ REPORT khớp dữ liệu và checker không FAIL.
 - Đã xử lý ZIP tracked, MSSV không phải số, --save-verify false success, cờ chất lượng chồng lấp, fingerprint/time metadata, version hash giới hạn và clear downstream.
 - CP8/CP9 kiểm rubric thủ công vì checker không chứng minh nội dung screenshot, DAG success, hiểu biết báo cáo hoặc tính Public.
 
-

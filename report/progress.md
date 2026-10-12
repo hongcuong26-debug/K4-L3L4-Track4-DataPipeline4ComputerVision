@@ -14,3 +14,16 @@
 - `dataset/day09-data.zip` đang được track và còn local (27,791,983 byte); CP1 sẽ giải nén, kiểm manifest, rồi bỏ ZIP khỏi index nhưng giữ file local.
 - Bằng chứng: `report/logs/cp0_preflight.txt`.
 - Bước tiếp theo: tạo `.env` với MSSV đã xác nhận, chuẩn bị dữ liệu, bật stack và chạy smoke CP1.
+
+## CP1 — Chuẩn bị dữ liệu và smoke run toàn pipeline
+
+- `.env` local giữ đúng `LAB_STUDENT_ID=2A202602415`; container Airflow in lại đúng cùng chuỗi.
+- ZIP chuẩn có SHA256 `3f6e8a36c0e4ac0b6c9ca3124abd9b9f4008acacb97f177a672c0551bda85542`; `check_data.py` nguyên bản xác nhận 6/6 file đúng manifest.
+- `dataset/day09-data.zip` đã bỏ khỏi Git index nhưng còn local; không có video/CSV/sources/DB/tar bị track (giữ `data/MANIFEST.json`, `data/README.md`, `work/.gitkeep`).
+- Lần build đầu kéo image và tạo `day09-airflow`; MinIO, Postgres, Airflow đều healthy. `/health` báo metadatabase và scheduler healthy.
+- Phát hiện lỗi môi trường Windows: `core.autocrlf=true` biến shebang thành `#!/bin/bash\r`, khiến Airflow thoát 255 với `exec /airflow-entrypoint.sh: no such file or directory`. Đã dùng `dos2unix` chỉ để chuẩn hóa byte LF trong worktree; Git diff mã nguồn rỗng, hash ba file bảo vệ khớp lại. Rebuild xác nhận Airflow chạy và scheduler heartbeat bình thường.
+- Git Bash cần `MSYS_NO_PATHCONV=1` để không đổi `-w /opt/lab` thành đường dẫn Windows; đây là biến tạm của host, không sửa `scripts/lab.sh`.
+- Smoke `scripts/lab.sh step all --reset` đạt `27/27 checks passed`; `report/evidence/run_summary.json.verify_all_passed=true`.
+- Kết quả smoke tạm: version `b2fb840da0d5`, 1.019 Gold frame; train/val/test = 693/164/162; 26 trip = 18/4/4.
+- Bằng chứng: `report/logs/cp1_data_preflight.txt`, `cp1_compose_up.txt`, `cp1_health.txt`, `smoke_all.txt`, `report/evidence/run_summary.json`.
+- Bước tiếp theo: CP2 chạy lại riêng Bronze, đọc history/video_files và điền Câu 1 bằng quan sát thật.
