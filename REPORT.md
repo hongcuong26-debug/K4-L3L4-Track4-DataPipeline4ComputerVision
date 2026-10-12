@@ -76,17 +76,23 @@ Khung hình **đen** và khung hình **tối** khác nhau thế nào, pipeline x
 ### Câu 6
 Dựa vào `leakage.json`: chia theo khung hình làm bao nhiêu trip bị chia cắt, so với chia theo trip? Vì sao điều này làm điểm kiểm thử đẹp một cách giả tạo?
 
-(trả lời ở đây)
+- `leakage.json` ghi 1.019 khung đáng dùng thuộc 26 trip. Nếu chia ngẫu nhiên theo từng khung, cả 26 trip đều xuất hiện ở nhiều split và cả 26 trip có khung ở cả train lẫn test; chia theo trip của Gold có `per_trip_split_trips_straddling=0`.
+- Các frame liền nhau trong cùng chuyến có cảnh vật, góc nhìn và điều kiện gần như giống nhau. Khi chúng nằm ở cả train và test, mô hình có thể ghi nhớ các mẫu gần trùng với “đề thi”, nên chỉ số test đẹp nhưng không phản ánh khả năng tổng quát sang chuyến mới.
+- Truy vấn độc lập `count(distinct split)` theo `trip_id` không trả dòng nào (`report/logs/gold_no_straddle.txt`); thí nghiệm chỉ chứng minh nguy cơ leakage, không đo hay khẳng định accuracy tăng bao nhiêu.
 
 ### Câu 7
 Vì sao `dataset_version` là **băm nội dung** chứ không phải ngày giờ hay số đếm? Hai lần chạy liên tiếp cho kết quả gì? Vì sao `dataset_version` của bạn **khác** bạn bè dù cùng dữ liệu (liên hệ MSSV)?
 
-(trả lời ở đây)
+- `pipeline/publish.py` sắp Gold theo `frame_id`, ghép mỗi dòng thành `frame_id|split`, nối bằng xuống dòng, lấy SHA256 rồi giữ 12 ký tự đầu. Vì vậy version đại diện đúng tập frame và phép gán split, không phụ thuộc đồng hồ hay thứ tự chạy; nó không phải hash byte toàn bộ ảnh/metadata.
+- Export ở Bước 4 và export lại liên tiếp đều cho `b2fb840da0d5`, cùng 1.019 frame và train/val/test = 693/164/162 (`step4.txt`, `export_second.txt`). `created_at`, Delta version hoặc manifest có thể đổi khi chạy lại; kết luận ổn định ở đây chỉ dành cho `dataset_version` và các số đã so.
+- SQL Gold xếp hạng trip riêng trong từng drive bằng `md5(trip_id || '2A202602415')`, rồi chia cả trip vào train/val/test. MSSV khác có thể đổi thứ tự trip, split và do đó đổi hash version; không có nghĩa mọi cặp MSSV chắc chắn tạo version khác nhau.
 
 ### Câu 8
 Đọc phần `lineage` trong `manifest.json` của dataset bạn. Trả lời "dataset này được tạo từ dữ liệu nào?" bằng chính nội dung đó. Nếu một người hỏi 3 tháng sau, thông tin nào giúp tái tạo lại đúng dataset này?
 
-(trả lời ở đây)
+- Manifest thật của `b2fb840da0d5` chỉ ra upstream: `bronze.raw_telemetry_a=0`, `bronze.raw_telemetry_b=0`, `bronze.trips_raw=0`, `bronze.video_files=1`, `silver.frames=27`, `silver.telemetry=0`, `silver.frames_flagged=0`, `silver.frame_telemetry=0` (`report/logs/manifest_cp5.txt`).
+- Hai video đầu vào có SHA256: drive A `636ba1a98dfc5ba665d1c935e1d2064e69f4df360ff9ffbd15795957d5e7e9aa`, drive B `bfa62703f645ff77a8578ae3fc74a00881140d38a404d43c8e2af265bbee9fdc`. Manifest cũng ghi quy tắc loại black/blurry/near-duplicate/out-of-sync và chia theo trip, stratified theo drive, thứ tự MD5.
+- Để tái tạo sau ba tháng cần giữ đúng commit/config pipeline, MSSV `2A202602415`, dữ liệu nguồn có các hash trên, các Delta table/version lineage, quy tắc lọc/chia và manifest/parquet. Bản quan sát có 1.021 object: 1.019 ảnh đúng 693/164/162 cùng `manifest.json` và `manifest.parquet`; CP9 sẽ tải lại manifest cuối để đối chiếu trạng thái nộp.
 
 ## Bước 5 · Điều phối và phục vụ
 

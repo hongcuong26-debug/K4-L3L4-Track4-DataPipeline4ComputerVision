@@ -57,3 +57,14 @@
 - Threshold A/B ở 0 bit = 61/8; 2 bit = 149/53; 6 bit = 363/244. Giữ cấu hình mặc định 2.
 - Câu 4–5 và bảng đã điền từ `step3.txt`, `unit_tests.txt`, `idempotency.json`, `threshold.json` và code fingerprint/SQL flag.
 - Bước tiếp theo: CP5 chạy Gold, export lặp, manifest và leakage.
+
+## CP5 — Bước 4: Gold, version, manifest và leakage
+
+- `scripts/lab.sh step 4`: dbt run PASS=2, dbt test PASS=7; module 4 đạt 7/7. Gold có 1.019 frame, train/val/test = 693/164/162 và 26 trip = 18/4/4.
+- Truy vấn chống straddle không trả dòng nào. Hai lần export liên tiếp đều cho `dataset_version=b2fb840da0d5`; lần thứ hai ghi `manifest_sha256=83d269ef1c553ec062a1608fc9ef621518fc95e7cdee99578c66bbc73a2b208a`.
+- `leakage.json`: chia theo frame làm 26/26 trip bị cắt và cả 26 xuất hiện ở train lẫn test; chia theo trip làm 0 trip bị cắt.
+- Manifest được đọc trực tiếp từ MinIO. Paginator xác nhận 1.021 object gồm 1.019 ảnh (693/164/162), `manifest.json` và `manifest.parquet`; lineage/version/hash video đã được đưa vào Câu 8.
+- Một phép liệt kê S3 đầu tiên chạm giới hạn 1.000 object nên chỉ thấy 143 ảnh val; đã phát hiện tổng đúng 1.000 và chạy lại bằng paginator. `manifest_cp5.txt` hiện chỉ giữ kết quả đầy đủ.
+- Hai lần thử interpreter sai (`python`, `/opt/venv/bin/python`) thất bại trước khi dùng đúng `/home/airflow/lab-venv/bin/python`; không thay đổi dữ liệu hay mã nguồn.
+- Bằng chứng: `step4.txt`, `gold_no_straddle.txt`, `export_second.txt`, `leakage.txt`, `manifest_cp5.txt`, `report/evidence/leakage.json`.
+- Bước tiếp theo: chạy gate module 4, commit CP5 rồi sang CP6 warehouse/Airflow baseline; quy tắc chọn fail trip vẫn cần xử lý vì MSSV có chữ.
