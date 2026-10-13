@@ -101,3 +101,6 @@
 - Verify độc lập bằng one-off container đạt 27/27, exit 0; output thật lưu report/verify.txt. Unit suite chạy lại: 9 tests, OK.
 - Version b2fb840da0d5, tổng 1.019, split 693/164/162, trip split 18/4/4; manifest cuối tải trực tiếp từ MinIO, lineage silver.frames=25. Bốn JSON thí nghiệm giữ lượt thực nghiệm riêng cùng MSSV; reset không tạo lại chúng.
 - Bằng chứng cuối và báo cáo đã đối chiếu; mã nguồn pipeline/dbt/dags/docker/scripts/tests/docker-compose.yml không có diff.
+- Chế độ --save-verify của checker gốc chạy qua adapter chỉ dành cho Windows: thay lời gọi scripts/lab.sh verify bằng cùng pipeline.cli verify trong one-off container; không sửa scripts/check_submission.py. Adapter yêu cầu exit 0 trước khi lưu file, khắc phục việc chế độ save của script không tự kiểm tra return code.
+- Checker cuối đạt 17/17, không còn FAIL; WARN dirty được giải quyết bằng commit cuối. Đủ năm JSON, năm ảnh thật, REPORT.md 10 câu, câu SQL riêng, Bonus và Nhìn lại.
+- Log terminal final_all.txt dừng ở output dbt marts do phiên shell bị đóng sau đó; run_summary.json hoàn tất thực tế lúc 19:39:49 UTC và verify độc lập 27/27 xác nhận trạng thái cuối. Không thêm output tưởng tượng vào log; các log PowerShell UTF-16 được chuyển cơ học sang UTF-8 cho GitHub đọc được.
