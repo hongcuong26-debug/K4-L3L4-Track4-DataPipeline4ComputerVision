@@ -109,4 +109,5 @@
 
 - Reviewer độc lập đã đối chiếu JSON, manifest, SQL, báo cáo, source diff và mở năm ảnh. Không có lỗi Critical/Important; có hai ghi chú Minor về encoding log và metadata ảnh CP6. Encoding được chuẩn hóa cơ học và metadata ghi đúng file hiện tại.
 - Ghi chú còn lại: ảnh baseline không chọn riêng run trong graph; trạng thái baseline có log metadata, còn ảnh retry chọn rõ run và tất cả node xanh. Chưa có xác nhận giảng viên về cách chuyển MSSV có chữ sang chỉ số trip; giả định được ghi công khai trong Câu 9.
-- Git ls-remote với credential.helper rỗng đọc được HEAD remote không đăng nhập; nhánh mặc định main. Push final HEAD và kiểm tra lại clone là bước cuối.
+- Git ls-remote với credential.helper rỗng đọc được HEAD remote không đăng nhập; nhánh mặc định main. Đã fast-forward và push commit bài `6500cf6` lên main; clone Public không dùng credential helper thành công, HEAD clone khớp và checker trên clone đạt 17/17, exit 0. CP10 hoàn tất; nộp đường dẫn repo theo kênh giảng viên, không gửi thay học viên.
+- Các thay đổi local có sẵn ở main (`.env.example` và `docs/2026-10-12-cv-data-pipeline-plan.md`) được giữ nguyên, không đưa vào commit bài. Worktree được giữ để bảo toàn dữ liệu local và lịch sử run phục vụ đối chiếu.
