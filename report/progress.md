@@ -79,4 +79,25 @@
 - Airflow UI có lỗi JavaScript `Cannot set properties of undefined (setting 'autocomplete')`, làm toggle/link click không gửi thao tác. Đã dùng Airflow CLI chính thức để unpause/trigger, sau đó dùng UI đọc đúng run và chụp graph; không chạy pipeline CLI đồng thời với DAG.
 - Lần polling đầu dùng `airflow dags state` với run ID không đúng cú pháp nên trả help text; đã dừng và dùng truy vấn read-only metadata Postgres. Log giữ cả lần thất bại và metadata đúng để audit.
 - Bằng chứng: `step5.txt`, `airflow_baseline.txt`, `cp6_verify.txt`, `list_trips.txt`, `report/screenshots/airflow_graph.png`.
-- Blocker còn lại của CP6: MSSV `2A202602415` có chữ nên `int(MSSV) % 26` không hợp lệ. Theo plan, không bỏ tiền tố, đổi MSSV hay tự thay bằng hash; cần quy tắc chính thức để chọn trip trước CP7.
+- Quy tắc trip được xử lý khi người dùng yêu cầu tiếp tục: giữ MSSV đầy đủ cho pipeline, dùng riêng phần số `202602415 % 26 = 15` để chọn trip-05297. Đây là giả định được ghi rõ trong REPORT.md, chưa có xác nhận quy tắc từ giảng viên.
+
+## CP7 — Fail-once và phục hồi
+
+- Run `cp7_crash_trip05297_20261013T001900`: một instance silver_frames[15] failed, bảy downstream upstream_failed; log lỗi đúng trip-05297.
+- Clear riêng instance failed, rồi clear bảy downstream của đúng logical date vì scheduler giữ upstream_failed; cùng run phục hồi success, không reset/mark-success.
+- Gold vẫn 1.019 frame, version b2fb840da0d5; duplicate frame_id=0; verify 27/27. Có ảnh log đỏ và Graph xanh sau retry. Fail hook đã xóa.
+
+## CP8 — Metabase, MinIO và Bonus
+
+- Dashboard `http://localhost:3000/dashboard/2` có sáu card mặc định và hai card vận hành mới ID 46/47; cả hai hiện dữ liệu warehouse cuối.
+- Trip đứng đầu tỷ lệ loại: trip-04622, 34/60=56,67%. Bonus theo drive: A loại 166/602=27,57%, B 61/644=9,47%, chênh 18,10 điểm phần trăm.
+- Cả hai drive chỉ thuộc nhóm Day/Clouds; không suy ra ảnh hưởng riêng của lighting/conditions. Bonus không thay đổi cấu hình hay version dataset.
+- Đã mở và kiểm tra ảnh thật minio_lake.png (Bronze/Gold/Silver) và metabase_dashboard.png (hai card riêng đọc được). Câu 10, câu SQL riêng và Nhìn lại đã điền.
+
+## CP9 — Run và kiểm tra cuối
+
+- Lượt `scripts/lab.sh step all --reset` đầu bị ngắt do Airflow webserver startup timeout 120 giây (container exit=1, OOM=false); không sửa nguồn để né lỗi.
+- Chạy lại cùng `python -m pipeline.cli step all --reset` trong one-off container cùng service/image/config/volumes, bỏ entrypoint webserver. run_summary cuối finished_at=2026-10-12T19:39:49.874073+00:00, verify_all_passed=true.
+- Verify độc lập bằng one-off container đạt 27/27, exit 0; output thật lưu report/verify.txt. Unit suite chạy lại: 9 tests, OK.
+- Version b2fb840da0d5, tổng 1.019, split 693/164/162, trip split 18/4/4; manifest cuối tải trực tiếp từ MinIO, lineage silver.frames=25. Bốn JSON thí nghiệm giữ lượt thực nghiệm riêng cùng MSSV; reset không tạo lại chúng.
+- Bằng chứng cuối và báo cáo đã đối chiếu; mã nguồn pipeline/dbt/dags/docker/scripts/tests/docker-compose.yml không có diff.

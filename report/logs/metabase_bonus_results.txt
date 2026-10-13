@@ -1,0 +1,6 @@
+﻿ drive_id | lighting | conditions | frames | frames_kept | frames_dropped | dropped_pct 
+----------+----------+------------+--------+-------------+----------------+-------------
+ drive_a  | Day      | Clouds     |    602 |         436 |            166 |       27.57
+ drive_b  | Day      | Clouds     |    644 |         583 |             61 |        9.47
+(2 rows)
+

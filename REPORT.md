@@ -11,8 +11,8 @@
 
 ## Kết quả cuối
 
-- `dataset_version` của bạn: `<điền>`  (phải khớp `report/evidence/run_summary.json`)
-- Số khung hình train / val / test của bạn: `<điền>`
+- `dataset_version` của bạn: `b2fb840da0d5` (khớp `report/evidence/run_summary.json` cuối).
+- Số khung hình train / val / test của bạn: `693 / 164 / 162` (tổng 1.019).
 - `report/verify.txt`: tạo bằng `python3 scripts/check_submission.py --save-verify` (phải có `27/27 checks passed`).
 - Ảnh chụp trong `report/screenshots/`: `airflow_graph.png`, `minio_lake.png`, `metabase_dashboard.png`, và ảnh bài tập sập/chạy lại (log task đỏ thấy trip của bạn).
 
@@ -90,9 +90,9 @@ Vì sao `dataset_version` là **băm nội dung** chứ không phải ngày gi�
 ### Câu 8
 Đọc phần `lineage` trong `manifest.json` của dataset bạn. Trả lời "dataset này được tạo từ dữ liệu nào?" bằng chính nội dung đó. Nếu một người hỏi 3 tháng sau, thông tin nào giúp tái tạo lại đúng dataset này?
 
-- Manifest thật của `b2fb840da0d5` chỉ ra upstream: `bronze.raw_telemetry_a=0`, `bronze.raw_telemetry_b=0`, `bronze.trips_raw=0`, `bronze.video_files=1`, `silver.frames=27`, `silver.telemetry=0`, `silver.frames_flagged=0`, `silver.frame_telemetry=0` (`report/logs/manifest_cp5.txt`).
+- Manifest cuối của `b2fb840da0d5` chỉ ra upstream: `bronze.raw_telemetry_a=0`, `bronze.raw_telemetry_b=0`, `bronze.trips_raw=0`, `bronze.video_files=1`, `silver.frames=25`, `silver.telemetry=0`, `silver.frames_flagged=0`, `silver.frame_telemetry=0` (`report/manifest_final.json`).
 - Hai video đầu vào có SHA256: drive A `636ba1a98dfc5ba665d1c935e1d2064e69f4df360ff9ffbd15795957d5e7e9aa`, drive B `bfa62703f645ff77a8578ae3fc74a00881140d38a404d43c8e2af265bbee9fdc`. Manifest cũng ghi quy tắc loại black/blurry/near-duplicate/out-of-sync và chia theo trip, stratified theo drive, thứ tự MD5.
-- Để tái tạo sau ba tháng cần giữ đúng commit/config pipeline, MSSV `2A202602415`, dữ liệu nguồn có các hash trên, các Delta table/version lineage, quy tắc lọc/chia và manifest/parquet. Bản quan sát có 1.021 object: 1.019 ảnh đúng 693/164/162 cùng `manifest.json` và `manifest.parquet`; CP9 sẽ tải lại manifest cuối để đối chiếu trạng thái nộp.
+- Để tái tạo sau ba tháng cần giữ đúng commit/config pipeline, MSSV `2A202602415`, dữ liệu nguồn có các hash trên, các Delta table/version lineage, quy tắc lọc/chia và manifest/parquet. Dataset có 1.019 ảnh đúng 693/164/162 cùng `manifest.json` và `manifest.parquet`; manifest cuối được tải trực tiếp từ lake sau lượt reset cuối. Delta version frames giảm từ 27 (CP5 có retry) xuống 25 (26 trip mới), nhưng nội dung dataset/version không đổi.
 
 ## Bước 5 · Điều phối và phục vụ
 
@@ -108,16 +108,31 @@ Mô tả chính xác điều xảy ra khi trip của bạn sập rồi chạy l�
 ### Câu 10
 Nâng từ 2 drive lên **500 xe mỗi ngày**: ba thành phần nào của pipeline này sẽ vỡ đầu tiên, và bạn thay bằng gì (nối với slide 12, 22, 23)?
 
-(trả lời ở đây)
+- Extraction là nút thắt CPU/I/O: mỗi trip cần FFmpeg decode, tính đặc trưng và upload nhiều ảnh; một container với `parallelism=2` sẽ tích backlog. Tôi tách workers theo trip, dùng hàng đợi và autoscaling, giữ overwrite partition/idempotency để retry an toàn.
+- DuckDB/dbt hiện xử lý trên một node và file `lakehouse.duckdb`; 500 xe/ngày làm tăng scan/join và tranh chấp tài nguyên. Tôi chuyển biến đổi lớn sang Spark hoặc engine phân tán trên lake, partition theo ngày/xe và xử lý incremental, giữ quality gate trước publish.
+- Airflow scheduler/webserver và Postgres serving dùng tài nguyên nhỏ trong Compose; nhiều mapped task và dashboard đồng thời sẽ cạnh tranh CPU/RAM. Tôi tách scheduler, workers, metadata DB và warehouse/BI, dùng warehouse phù hợp cùng materialized/incremental marts.
+- Đây là phân tích từ cấu hình/code và workload, chưa có benchmark 500 xe. Tôi chưa có nội dung slide 12/22/23 để trích hoặc khẳng định ánh xạ chính xác từng slide.
 
 ## Câu hỏi riêng của bạn trên Metabase
 
 Câu SQL bạn thêm vào dashboard và điều nó cho biết:
 
-(trả lời ở đây)
+- Câu hỏi: “Trip nào có tỷ lệ frame bị loại cao nhất?”; SQL đầy đủ ở `report/metabase_question.sql`, chạy trên Postgres warehouse sau lượt chạy cuối.
+- Kết quả: `trip-04622` của drive A loại 34/60 frame (56,67%), giữ 26, tốc độ trung bình 67,1 km/h, split test. Tiếp theo là `trip-03904` (11/22 = 50%) và `trip-02086` (28/60 = 46,67%).
+- Bảng giúp ưu tiên kiểm tra trip có hao hụt cao trước khi huấn luyện. Tốc độ/điều kiện chỉ là ngữ cảnh; bảng tổng hợp này chưa xác định nguyên nhân loại, cần truy vấn cờ frame để kết luận.
+
+## Bonus · Câu hỏi vận hành thứ hai
+
+- Chọn thêm câu hỏi “Tỷ lệ frame bị loại theo drive/lighting/conditions?” (`report/metabase_bonus.sql`), không đổi cấu hình pipeline. Trước khi thêm hai câu hỏi riêng, dashboard có 6 card mặc định; sau khi thêm có 8 card, card bắt buộc ID 46 và Bonus ID 47 trên dashboard ID 2.
+- Kết quả sau khi chạy: A giữ 436/602, loại 166 (27,57%); B giữ 583/644, loại 61 (9,47%). A cao hơn B 18,10 điểm phần trăm, nên có thể ưu tiên audit drive A; đây là tổng có trọng số theo số frame, không phải trung bình phần trăm mỗi trip.
+- Cả hai drive hiện chỉ có nhóm `Day/Clouds`, nên kết quả chưa chứng minh tác động riêng của lighting/conditions. So với bảng top trip, câu hỏi này cho thấy mức hao hụt toàn drive và tránh chọn vài trip cực đoan để kết luận chung.
+- Dashboard thực tế đã chứa cả hai card và hiển thị các số trên (`report/screenshots/metabase_dashboard.png`). Sau thêm card, dataset vẫn 1.019 frame, version `b2fb840da0d5`, split 693/164/162; verify cuối đạt 27/27, cấu hình chính giữ nguyên.
 
 ## Nhìn lại
 
 Điều bạn thấy bất ngờ nhất, điều gì còn chưa rõ, và một lỗi dữ liệu mà bạn nghĩ pipeline **chưa** bắt được (nếu có). Tối đa 8 dòng.
 
-(trả lời ở đây)
+- Quan sát đáng chú ý: frame tối được giữ để không mất cảnh đêm/hầm, trong khi frame đen bị loại; các cờ chồng lấp nên không thể cộng từng cột để tính tổng loại.
+- Retry một instance xanh chưa đủ: 7 downstream vẫn `upstream_failed`, cần clear đúng scope; dữ liệu/version vẫn ổn định sau phục hồi.
+- Điểm còn cần hiểu thêm là vận hành khi task chết giữa upload và Delta commit, vì hook của bài chỉ mô phỏng lỗi trước extraction.
+- Pipeline có thể chưa bắt được cảnh ảnh đúng chất lượng nhưng sai nội dung, camera lệch hướng, hoặc GPS hợp kiểu nhưng sai vị trí; cần kiểm tra semantic và kiểm tra chéo cảm biến.
