@@ -1,4 +1,4 @@
-﻿ drive_id |  trip_id   | lighting | conditions | frames | frames_kept | frames_dropped | dropped_pct | avg_speed_kmh | split 
+ drive_id |  trip_id   | lighting | conditions | frames | frames_kept | frames_dropped | dropped_pct | avg_speed_kmh | split 
 ----------+------------+----------+------------+--------+-------------+----------------+-------------+---------------+-------
  drive_a  | trip-04622 | Day      | Clouds     |     60 |          26 |             34 |       56.67 |          67.1 | test
  drive_a  | trip-03904 | Day      | Clouds     |     22 |          11 |             11 |       50.00 |          46.1 | train

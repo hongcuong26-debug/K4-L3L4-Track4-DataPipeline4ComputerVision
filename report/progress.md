@@ -75,7 +75,7 @@
 - `LAB_FAIL_ONCE` trống. Hai DAG đã được unpause; Airflow UI xác nhận `day09_video_pipeline` active và `Is paused=false`.
 - Reset run `cp6_reset_2A202602415_20261012T235100` success từ 16:51:31 đến 16:52:42 UTC; task `reset_lake` success.
 - Baseline run `cp6_baseline_2A202602415_20261012T235300` success từ 16:53:13 đến 17:01:09 UTC (7 phút 55 giây). Tất cả task success; `silver_frames` có đúng 26 mapped instance, chạy tuần tự do `max_active_tis_per_dagrun=1`.
-- Sau DAG: `dataset_version=b2fb840da0d5`, 1.019 Gold frame, verify trực tiếp đạt 27/27. Ảnh graph xanh thật `airflow_graph.png` có kích thước 1.300×815, SHA256 `c49f1806d1305d27b0c3ac7141ea4f9505fd720deb1e9d1b40a253afb1dc67d2`.
+- Sau DAG: `dataset_version=b2fb840da0d5`, 1.019 Gold frame, verify trực tiếp đạt 27/27. `airflow_graph.png` hiện là lần chụp lại 1.282×947, SHA256 `576d6edaec04c42bcb5cc64881ce5024209f3d6d15d91f91a29af3ac6b0258e4`, thấy grid task xanh; graph không chọn run cụ thể. Run ID/trạng thái success baseline được chứng minh bằng log metadata. Graph chọn rõ run phục hồi nằm ở `airflow_retry_graph.png`.
 - Airflow UI có lỗi JavaScript `Cannot set properties of undefined (setting 'autocomplete')`, làm toggle/link click không gửi thao tác. Đã dùng Airflow CLI chính thức để unpause/trigger, sau đó dùng UI đọc đúng run và chụp graph; không chạy pipeline CLI đồng thời với DAG.
 - Lần polling đầu dùng `airflow dags state` với run ID không đúng cú pháp nên trả help text; đã dừng và dùng truy vấn read-only metadata Postgres. Log giữ cả lần thất bại và metadata đúng để audit.
 - Bằng chứng: `step5.txt`, `airflow_baseline.txt`, `cp6_verify.txt`, `list_trips.txt`, `report/screenshots/airflow_graph.png`.
@@ -104,3 +104,9 @@
 - Chế độ --save-verify của checker gốc chạy qua adapter chỉ dành cho Windows: thay lời gọi scripts/lab.sh verify bằng cùng pipeline.cli verify trong one-off container; không sửa scripts/check_submission.py. Adapter yêu cầu exit 0 trước khi lưu file, khắc phục việc chế độ save của script không tự kiểm tra return code.
 - Checker cuối đạt 17/17, không còn FAIL; WARN dirty được giải quyết bằng commit cuối. Đủ năm JSON, năm ảnh thật, REPORT.md 10 câu, câu SQL riêng, Bonus và Nhìn lại.
 - Log terminal final_all.txt dừng ở output dbt marts do phiên shell bị đóng sau đó; run_summary.json hoàn tất thực tế lúc 19:39:49 UTC và verify độc lập 27/27 xác nhận trạng thái cuối. Không thêm output tưởng tượng vào log; các log PowerShell UTF-16 được chuyển cơ học sang UTF-8 cho GitHub đọc được.
+
+## Rà soát cuối và CP10
+
+- Reviewer độc lập đã đối chiếu JSON, manifest, SQL, báo cáo, source diff và mở năm ảnh. Không có lỗi Critical/Important; có hai ghi chú Minor về encoding log và metadata ảnh CP6. Encoding được chuẩn hóa cơ học và metadata ghi đúng file hiện tại.
+- Ghi chú còn lại: ảnh baseline không chọn riêng run trong graph; trạng thái baseline có log metadata, còn ảnh retry chọn rõ run và tất cả node xanh. Chưa có xác nhận giảng viên về cách chuyển MSSV có chữ sang chỉ số trip; giả định được ghi công khai trong Câu 9.
+- Git ls-remote với credential.helper rỗng đọc được HEAD remote không đăng nhập; nhánh mặc định main. Push final HEAD và kiểm tra lại clone là bước cuối.
